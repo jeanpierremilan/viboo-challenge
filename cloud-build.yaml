@@ -1,0 +1,72 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License
+
+# [START cloudbuild_npm_node]
+#echo $$OPERA_API_KEY > ./my_secret
+steps:
+- id: 'gcloud credential'
+  name: 'alpine'
+  secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
+  entrypoint: 'sh'  
+  args: 
+  - '-c'
+  - | 
+      echo "$$GOOGLE_APPLICATION_CREDENTIALS_JSON" >> ./src/<project_id>.json
+      chmod 400 ./<project_id>.json
+      export GOOGLE_APPLICATION_CREDENTIALS=./src/<project_id>.json
+      echo $$GOOGLE_APPLICATION_CREDENTIALS
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t',
+    'europe-west6-docker.pkg.dev/<project_id>/viboo/backend:$SHORT_SHA',
+    '--cache-from', 
+    'europe-west6-docker.pkg.dev/<project_id>/viboo/backend:$SHORT_SHA',
+    '-f',
+    'Dockerfile',
+    '.'
+    ]
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push','europe-west6-docker.pkg.dev/<project_id>/viboo/backend:$SHORT_SHA']
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: gcloud
+  args:
+   - 'run'
+   - 'deploy'
+   - 'viboo-backend'
+   - '--allow-unauthenticated'
+   - '--image'
+   - 'europe-west6-docker.pkg.dev/<project_id>/viboo/backend:$SHORT_SHA'
+   - '--region'
+   - 'europe-west6'
+   - '--cpu'
+   - '1'
+   - '--memory'
+   - '2Gi'
+   - '--timeout'
+   - '60m'
+   - '--port'
+   - '8080'
+   - '--project'
+   - '<project_id>'
+images:
+- 'europe-west6-docker.pkg.dev/<project_id>/viboo/backend:$SHORT_SHA'
+timeout: 1200s
+availableSecrets:
+  secretManager:
+  - versionName: projects/<project_id>/secrets/_sa_key/versions/latest
+    env: 'GOOGLE_APPLICATION_CREDENTIALS_JSON'
+
+
+
