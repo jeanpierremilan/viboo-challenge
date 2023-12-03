@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 # Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///temperature_data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -39,22 +39,6 @@ def add_data():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///temperature_data.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
-
-# Define a model for temperature data
-class TemperatureModel(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    building = db.Column(db.String(50), nullable=False)
-    room = db.Column(db.String(50), nullable=False)
-    temperature = db.Column(db.Float, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-
-# Create the database tables
-db.create_all()
 
 # Generate some example temperature data
 
